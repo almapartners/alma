@@ -180,3 +180,4 @@ a.platform:hover{padding-left:12px}
 
 /* home list has room: keep platform titles on one line */
 .platforms h3 br{display:none}
+.nw{white-space:nowrap}
