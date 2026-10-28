@@ -76,11 +76,30 @@
     }, { passive: true });
   }
 
-  // ---- contact form: show thank-you after sending ----
-  if (/[?&]sent=1/.test(location.search)) {
-    var box = document.querySelector('.form-area');
-    if (box) box.classList.add('is-sent');
+  // ---- contact form: send in the background, then show thank-you ----
+  var form = document.querySelector('form[data-ajax]');
+  if (form) {
+    var area = document.querySelector('.form-area');
+    form.addEventListener('submit', function (e) {
+      if (!window.fetch) return; // very old browsers: normal post
+      e.preventDefault();
+      if (form.querySelector('[name="_honey"]').value) return;
+      area.classList.remove('has-error');
+      area.classList.add('is-busy');
+      var data = {};
+      new FormData(form).forEach(function (v, k) { data[k] = v; });
+      data.language = root.getAttribute('data-lang');
+      fetch(form.getAttribute('data-ajax'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (res) {
+          area.classList.remove('is-busy');
+          if (res.ok && String(res.j.success) === 'true') { area.classList.add('is-sent'); form.reset(); }
+          else { area.classList.add('has-error'); }
+        })
+        .catch(function () { area.classList.remove('is-busy'); area.classList.add('has-error'); });
+    });
   }
-  var next = document.querySelector('input[name="_next"]');
-  if (next) next.value = location.origin + location.pathname + '?sent=1';
 })();
