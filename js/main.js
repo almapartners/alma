@@ -86,13 +86,13 @@
       if (form.querySelector('[name="_honey"]').value) return;
       area.classList.remove('has-error');
       area.classList.add('is-busy');
-      var data = {};
-      new FormData(form).forEach(function (v, k) { data[k] = v; });
-      data.language = root.getAttribute('data-lang');
+      var data = new URLSearchParams();
+      new FormData(form).forEach(function (v, k) { if (k !== '_honey') data.append(k, v); });
+      data.append('language', root.getAttribute('data-lang') === 'en' ? 'English' : 'Korean');
       fetch(form.getAttribute('data-ajax'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(data)
+        headers: { 'Accept': 'application/json' },
+        body: data
       }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
         .then(function (res) {
           area.classList.remove('is-busy');
