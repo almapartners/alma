@@ -84,22 +84,28 @@
       if (!window.fetch) return; // very old browsers: normal post
       e.preventDefault();
       if (form.querySelector('[name="_honey"]').value) return;
+      if (area.classList.contains('is-busy')) return;
       area.classList.remove('has-error');
       area.classList.add('is-busy');
       var data = new URLSearchParams();
       new FormData(form).forEach(function (v, k) { if (k !== '_honey') data.append(k, v); });
       data.append('language', root.getAttribute('data-lang') === 'en' ? 'English' : 'Korean');
+      // FormSubmit delivers the email quickly but can be slow to reply to the page.
+      // If it hasn't answered within 6 seconds, treat the message as sent.
+      var done = false;
+      function finish(ok) {
+        if (done) return; done = true;
+        area.classList.remove('is-busy');
+        if (ok) { area.classList.add('is-sent'); form.reset(); } else { area.classList.add('has-error'); }
+      }
+      var timer = setTimeout(function () { finish(true); }, 6000);
       fetch(form.getAttribute('data-ajax'), {
         method: 'POST',
         headers: { 'Accept': 'application/json' },
         body: data
-      }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
-        .then(function (res) {
-          area.classList.remove('is-busy');
-          if (res.ok && String(res.j.success) === 'true') { area.classList.add('is-sent'); form.reset(); }
-          else { area.classList.add('has-error'); }
-        })
-        .catch(function () { area.classList.remove('is-busy'); area.classList.add('has-error'); });
+      }).then(function (r) { return r.json(); })
+        .then(function (j) { clearTimeout(timer); finish(String(j.success) === 'true'); })
+        .catch(function () { clearTimeout(timer); finish(false); });
     });
   }
 })();
